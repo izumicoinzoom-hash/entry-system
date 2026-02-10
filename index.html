@@ -83,7 +83,7 @@
             const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
             const [selectedTeam, setSelectedTeam] = useState(null);
             const [name, setName] = useState('');
-            const [company, setCompany] = useState('');
+            // company state removed
             const [choices, setChoices] = useState({ first: null, second: null, third: null });
             const [isSubmitting, setIsSubmitting] = useState(false);
             const [allEntries, setAllEntries] = useState([]);
@@ -105,7 +105,6 @@
                     const myEntry = data.find(d => d.id === uid);
                     if (myEntry) {
                         setName(myEntry.name);
-                        setCompany(myEntry.company || '');
                         setChoices(myEntry.choices);
                     }
                 });
@@ -128,7 +127,7 @@
                 setIsSubmitting(true);
                 try {
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', user.uid), {
-                        name, company, choices, updatedAt: new Date().toISOString()
+                        name, choices, updatedAt: new Date().toISOString()
                     });
                     alert("送信しました！");
                 } catch (e) {
@@ -190,9 +189,17 @@
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
                                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Icon name="user-circle-2" className="w-4 h-4"/> YOUR PROFILE</h2>
                                     <div className="space-y-3">
-                                        <input type="text" placeholder="会社名" value={company} onChange={e=>setCompany(e.target.value)} className="w-full bg-slate-50 px-4 py-3 rounded-xl text-base font-bold outline-none border border-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:font-medium placeholder:text-slate-300" />
                                         <input type="text" placeholder="お名前 (必須)" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-slate-50 px-4 py-3 rounded-xl text-base font-bold outline-none border border-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:font-medium placeholder:text-slate-300" />
                                     </div>
+                                </div>
+
+                                {/* 案内文エリア */}
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
+                                    <Icon name="info" className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-blue-800 font-bold leading-relaxed">
+                                        下の「TEAM LIST」から各チームの<br/>詳細・繁忙期をよく確認してから、<br/>
+                                        希望順位を選択してください。
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -228,7 +235,7 @@
                                             <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
                                             {Object.entries(choices).map(([r, id]) => id === team.id && (
                                                 <div key={r} className={`text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm ${r==='first'?'bg-amber-400':r==='second'?'bg-slate-300':'bg-orange-300'}`}>
-                                                    {r==='first'?'1st':r==='second'?'2nd':'3rd'}
+                                                    {r==='first'?'第1希望':r==='second'?'第2希望':'第3希望'}
                                                 </div>
                                             ))}
                                             </div>
@@ -265,7 +272,7 @@
                                                 {['first','second','third'].map((r, i) => (
                                                     <div key={r}>
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>{i+1}st</span>
+                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>第{i+1}希望</span>
                                                             <span className="text-xs font-bold text-slate-300">{s[r]}票</span>
                                                         </div>
                                                         <div className="flex flex-wrap gap-1">
@@ -311,7 +318,7 @@
                                     <div className="grid grid-cols-3 gap-3 pt-2 pb-4">
                                         {['first','second','third'].map((r,i)=>(
                                             <button key={r} onClick={()=>{handleSelect(r, selectedTeam.id); setSelectedTeam(null);}} className={`py-3 rounded-xl text-xs font-bold border-2 tap-scale ${choices[r]===selectedTeam.id?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-500 border-slate-200'}`}>
-                                                {i+1}位で希望
+                                                第{i+1}希望
                                             </button>
                                         ))}
                                     </div>
