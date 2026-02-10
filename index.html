@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第19期 チーム希望エントリー</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .tap-scale:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        // ★★★重要：ここにあなたのFirebase設定を貼り付けてください★★★
+        // 設定がないと動きません。Firebaseコンソール > プロジェクト設定 > 全般 > マイアプリ から取得できます。
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        // Initialize Firebase
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Firebase init error. Config might be missing.", e);
+        }
+        
+        const appId = 'doyukai-19th-team-selector';
+        const { useState, useEffect } = React;
+
+        // Icon Helper
+        const Icon = ({ name, className }) => {
+            useEffect(() => { lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const TEAMS = [
+            { id: 'org', title: '組織・仲間づくり', subtitle: '5月総会・動員・e-doyu', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', icon: 'users', details: ['【主な担当】5月定時総会の設営、動員目標達成', '【繁忙期】4月～5月', '【得られるもの】顔の広さ、組織運営の基礎'] },
+            { id: 'vision', title: 'ビジョン・AI', subtitle: '11月フォーラム・AI活用', color: 'bg-blue-50 border-blue-200 text-blue-800', icon: 'target', details: ['【主な担当】11月経営フォーラム、AI勉強会', '【繁忙期】9月～11月', '【得られるもの】最新AIスキル、自社の経営指針'] },
+            { id: 'learn', title: '事業承継・学び', subtitle: '実践報告例会・家族例会', color: 'bg-amber-50 border-amber-200 text-amber-800', icon: 'book-open', details: ['【主な担当】家族例会(夏)、実践報告の企画', '【繁忙期】7月～8月', '【得られるもの】深い学び、家族ぐるみの交流'] },
+            { id: 'region', title: '地域・広域連携', subtitle: '天草連携・全国行事', color: 'bg-rose-50 border-rose-200 text-rose-800', icon: 'map-pin', details: ['【主な担当】天草合同例会、全国行事動員', '【繁忙期】10月', '【得られるもの】県外・市外との強い繋がり'] }
+        ];
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [activeTab, setActiveTab] = useState('entry');
+            const [selectedTeam, setSelectedTeam] = useState(null);
+            const [name, setName] = useState('');
+            const [company, setCompany] = useState('');
+            const [choices, setChoices] = useState({ first: null, second: null, third: null });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [allEntries, setAllEntries] = useState([]);
+
+            useEffect(() => {
+                if(!auth) return;
+                signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => {
+                    setUser(u);
+                    if(u) loadData(u.uid);
+                });
+            }, []);
+
+            const loadData = (uid) => {
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'team_preferences'));
+                onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setAllEntries(data);
+                    const myEntry = data.find(d => d.id === uid);
+                    if (myEntry) {
+                        setName(myEntry.name);
+                        setCompany(myEntry.company || '');
+                        setChoices(myEntry.choices);
+                    }
+                });
+            };
+
+            const handleSelect = (rank, teamId) => {
+                setChoices(prev => {
+                    const next = { ...prev };
+                    if (next.first === teamId) next.first = null;
+                    if (next.second === teamId) next.second = null;
+                    if (next.third === teamId) next.third = null;
+                    next[rank] = teamId;
+                    return next;
+                });
+                setSelectedTeam(null);
+            };
+
+            const handleSubmit = async () => {
+                if (!name || !choices.first) return alert("お名前と第1希望は必須です");
+                setIsSubmitting(true);
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', user.uid), {
+                        name, company, choices, updatedAt: new Date().toISOString()
+                    });
+                    alert("送信しました！");
+                } catch (e) {
+                    console.error(e);
+                    alert("送信エラー: Firebase設定を確認してください");
+                }
+                setIsSubmitting(false);
+            };
+
+            const getStats = () => {
+                const stats = {};
+                TEAMS.forEach(t => stats[t.id] = { first: 0, second: 0, third: 0 });
+                allEntries.forEach(e => {
+                    if (e.choices.first) stats[e.choices.first].first++;
+                    if (e.choices.second) stats[e.choices.second].second++;
+                    if (e.choices.third) stats[e.choices.third].third++;
+                });
+                return stats;
+            };
+            const stats = getStats();
+
+            if (!auth) {
+                return <div className="p-10 text-center font-bold text-red-600">Firebaseの設定が行われていません。コード内のfirebaseConfigを修正してください。</div>;
+            }
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen pb-24">
+                    <header className="bg-white border-b sticky top-0 z-20 p-4 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-lg font-black">第19期 チーム希望</h1>
+                            <p className="text-[10px] font-bold text-blue-600">Draft Selection</p>
+                        </div>
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button onClick={()=>setActiveTab('entry')} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='entry'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>入力</button>
+                            <button onClick={()=>setActiveTab('admin')} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='admin'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>集計</button>
+                        </div>
+                    </header>
+
+                    <main className="p-4 space-y-6">
+                        {activeTab === 'entry' ? (
+                            <>
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 space-y-3 shadow-sm">
+                                    <h2 className="text-sm font-black flex gap-2 items-center"><Icon name="info" className="w-4 h-4 text-blue-500"/>基本情報</h2>
+                                    <input type="text" placeholder="会社名" value={company} onChange={e=>setCompany(e.target.value)} className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-blue-500" />
+                                    <input type="text" placeholder="お名前 (必須)" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-blue-500" />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h2 className="text-xs font-black text-slate-400 px-1">希望順位</h2>
+                                    {['first','second','third'].map((rank, i) => {
+                                        const team = TEAMS.find(t=>t.id===choices[rank]);
+                                        return (
+                                            <div key={rank} className="bg-white border p-3 rounded-xl flex items-center gap-3 shadow-sm min-h-[60px]">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs ${i===0?'bg-amber-500':i===1?'bg-slate-400':'bg-orange-700'}`}>{i+1}</div>
+                                                {team ? (
+                                                    <div className="flex-1 flex justify-between items-center">
+                                                        <div><div className="font-bold text-sm">{team.title}</div></div>
+                                                        <button onClick={()=>handleSelect(rank, null)} className="text-slate-300"><Icon name="x" className="w-4 h-4"/></button>
+                                                    </div>
+                                                ) : <span className="text-xs text-slate-400">下から選択してください</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="grid gap-4">
+                                    {TEAMS.map(team => (
+                                        <div key={team.id} className={`relative border-2 rounded-2xl p-5 tap-scale transition-transform ${team.color}`}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="bg-white p-2 rounded-xl shadow-sm"><Icon name={team.icon} className="w-6 h-6"/></div>
+                                                <button onClick={()=>setSelectedTeam(team)} className="bg-white/50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">詳細 <Icon name="chevron-right" className="w-3 h-3"/></button>
+                                            </div>
+                                            <h3 className="font-black text-lg">{team.title}</h3>
+                                            <p className="text-xs font-bold opacity-70">{team.subtitle}</p>
+                                            {Object.entries(choices).map(([r, id]) => id === team.id && (
+                                                <div key={r} className="absolute top-0 right-0 bg-slate-800 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow">
+                                                    {r==='first'?'第1':r==='second'?'第2':'第3'}希望
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button onClick={handleSubmit} disabled={isSubmitting} className="fixed bottom-4 left-4 right-4 bg-blue-600 text-white py-4 rounded-xl font-black shadow-lg text-center">
+                                    {isSubmitting ? '送信中...' : 'この内容でエントリーする'}
+                                </button>
+                            </>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-blue-600 text-white p-5 rounded-2xl shadow-lg">
+                                    <h2 className="font-bold flex items-center gap-2"><Icon name="bar-chart-3" className="w-5 h-5"/> エントリー状況</h2>
+                                    <p className="text-sm mt-1">回答数: <span className="text-2xl font-black">{allEntries.length}</span></p>
+                                </div>
+                                {TEAMS.map(team => {
+                                    const s = stats[team.id];
+                                    const total = s.first + s.second + s.third;
+                                    return (
+                                        <div key={team.id} className="bg-white p-4 rounded-2xl border shadow-sm">
+                                            <div className="flex gap-3 mb-3">
+                                                <div className={`p-2 rounded-lg ${team.color.replace('text-','bg-')} bg-opacity-20`}><Icon name={team.icon} className="w-5 h-5"/></div>
+                                                <div><h3 className="font-bold">{team.title}</h3><div className="text-xs font-bold text-slate-500">総票数: {total}</div></div>
+                                            </div>
+                                            <div className="space-y-2 text-xs font-bold">
+                                                <div className="flex items-center gap-2"><span className="w-8 text-amber-500">1st</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.first/Math.max(1, allEntries.length))*100}%`}} className="bg-amber-500 h-full rounded-full"></div></div><span>{s.first}</span></div>
+                                                <div className="flex items-center gap-2"><span className="w-8 text-slate-400">2nd</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.second/Math.max(1, allEntries.length))*100}%`}} className="bg-slate-400 h-full rounded-full"></div></div><span>{s.second}</span></div>
+                                                <div className="flex items-center gap-2"><span className="w-8 text-orange-700">3rd</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.third/Math.max(1, allEntries.length))*100}%`}} className="bg-orange-700 h-full rounded-full"></div></div><span>{s.third}</span></div>
+                                            </div>
+                                            <div className="mt-3 pt-2 border-t flex flex-wrap gap-1">
+                                                {allEntries.filter(e=>e.choices.first===team.id).map(e=><span key={e.id} className="bg-amber-50 text-amber-800 border px-2 py-0.5 rounded text-[10px] font-bold">{e.name}</span>)}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </main>
+
+                    {selectedTeam && (
+                        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden animate-in slide-in-from-bottom shadow-2xl">
+                                <div className={`p-6 ${selectedTeam.color.split(' ')[0]}`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="bg-white p-3 rounded-2xl shadow-sm inline-block"><Icon name={selectedTeam.icon} className="w-6 h-6"/></div>
+                                        <button onClick={()=>setSelectedTeam(null)} className="bg-white/50 p-2 rounded-full"><Icon name="x" className="w-5 h-5"/></button>
+                                    </div>
+                                    <h2 className="text-2xl font-black">{selectedTeam.title}</h2>
+                                    <p className="font-bold opacity-80">{selectedTeam.subtitle}</p>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="space-y-2">
+                                        {selectedTeam.details.map((d,i)=>(<div key={i} className="flex gap-2 text-sm"><Icon name="check-circle-2" className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"/><span className="text-slate-700">{d}</span></div>))}
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 pt-2">
+                                        {['first','second','third'].map((r,i)=>(
+                                            <button key={r} onClick={()=>handleSelect(r, selectedTeam.id)} className={`py-3 rounded-xl text-xs font-bold border-2 ${choices[r]===selectedTeam.id?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-600'}`}>
+                                                {i+1}位
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
