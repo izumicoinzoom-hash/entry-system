@@ -36,7 +36,7 @@
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
         // Initialize Firebase
         let app, auth, db;
@@ -67,7 +67,7 @@
         function App() {
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('entry');
-            const [isAdminUnlocked, setIsAdminUnlocked] = useState(false); // パスワード解除状態管理
+            const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
             const [selectedTeam, setSelectedTeam] = useState(null);
             const [name, setName] = useState('');
             const [company, setCompany] = useState('');
@@ -120,20 +120,39 @@
                     alert("送信しました！");
                 } catch (e) {
                     console.error(e);
-                    alert("送信エラー: 権限エラーの可能性があります。Firestoreのルールを確認してください。");
+                    alert("送信エラー: 権限エラーの可能性があります。");
                 }
                 setIsSubmitting(false);
             };
 
-            // 管理者タブへのアクセス制御
+            const handleReset = async () => {
+                if(!confirm("【注意】\n全ての投票データを削除してリセットしますか？\nこの操作は元に戻せません。")) return;
+                
+                const p = prompt("確認のためパスワード(1919)を入力してください");
+                if(p !== "1919") return alert("パスワードが違います");
+
+                setIsSubmitting(true);
+                try {
+                    // 全データを削除
+                    const deletePromises = allEntries.map(entry => 
+                        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', entry.id))
+                    );
+                    await Promise.all(deletePromises);
+                    alert("リセット完了しました！");
+                } catch(e) {
+                    console.error(e);
+                    alert("エラーが発生しました: " + e.message);
+                }
+                setIsSubmitting(false);
+            };
+
             const handleAdminAccess = () => {
                 if (isAdminUnlocked) {
                     setActiveTab('admin');
                     return;
                 }
-                // パスワード確認
                 const pass = prompt("【副部会長専用】\n集計閲覧用パスワードを入力してください");
-                if (pass === "1919") { // 第19期にちなんで1919
+                if (pass === "1919") {
                     setIsAdminUnlocked(true);
                     setActiveTab('admin');
                 } else if (pass !== null) {
@@ -245,6 +264,12 @@
                                         </div>
                                     )
                                 })}
+
+                                <div className="mt-8 pt-6 border-t border-slate-200">
+                                    <button onClick={handleReset} className="w-full py-3 text-red-600 font-bold text-xs border border-red-200 rounded-xl hover:bg-red-50 flex items-center justify-center gap-2">
+                                        <Icon name="trash-2" className="w-4 h-4" /> 集計データを全てリセットする
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </main>
