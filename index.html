@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>第19期 チーム希望エントリー</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,15 +15,28 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .tap-scale:active { transform: scale(0.98); }
+        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        
+        /* iPhone X+ Safe Area Support */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+        .bottom-safe { bottom: env(safe-area-inset-bottom); }
+        
+        /* Mobile Input Zoom Fix */
+        input, select, textarea { font-size: 16px !important; }
+
+        .tap-scale:active { transform: scale(0.97); transition: transform 0.1s; }
+        
+        /* Hide scrollbar for clean UI */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        // ▼▼▼ Firebase設定（鍵）が入った状態です ▼▼▼
+        // ▼▼▼ Firebase設定 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyCesxY149Fx77NDwnplZBCH06dekDcduA4",
             authDomain: "team-entry.firebaseapp.com",
@@ -33,7 +46,7 @@
             appId: "1:137873897281:web:67b999f86431d0e20213c0",
             measurementId: "G-KLBEB481CY"
         };
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
@@ -52,7 +65,6 @@
         const appId = 'doyukai-19th-team-selector';
         const { useState, useEffect } = React;
 
-        // Icon Helper
         const Icon = ({ name, className }) => {
             useEffect(() => { lucide.createIcons(); }, [name]);
             return <i data-lucide={name} className={className}></i>;
@@ -127,36 +139,22 @@
             };
 
             const handleReset = async () => {
-                if(!confirm("【注意】\n全ての投票データを削除してリセットしますか？\nこの操作は元に戻せません。")) return;
-                const p = prompt("確認のためパスワード(1919)を入力してください");
+                if(!confirm("【注意】\n全ての投票データを削除してリセットしますか？")) return;
+                const p = prompt("パスワード(1919)を入力");
                 if(p !== "1919") return alert("パスワードが違います");
-
                 setIsSubmitting(true);
                 try {
-                    const deletePromises = allEntries.map(entry => 
-                        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', entry.id))
-                    );
-                    await Promise.all(deletePromises);
-                    alert("リセット完了しました！");
-                } catch(e) {
-                    console.error(e);
-                    alert("エラー: " + e.message);
-                }
+                    await Promise.all(allEntries.map(e => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', e.id))));
+                    alert("リセット完了");
+                } catch(e) { alert("エラー: " + e.message); }
                 setIsSubmitting(false);
             };
 
             const handleAdminAccess = () => {
-                if (isAdminUnlocked) {
-                    setActiveTab('admin');
-                    return;
-                }
-                const pass = prompt("【副部会長専用】\n集計閲覧用パスワードを入力してください");
-                if (pass === "1919") {
-                    setIsAdminUnlocked(true);
-                    setActiveTab('admin');
-                } else if (pass !== null) {
-                    alert("パスワードが違います");
-                }
+                if (isAdminUnlocked) { setActiveTab('admin'); return; }
+                const pass = prompt("集計閲覧用パスワード(1919)");
+                if (pass === "1919") { setIsAdminUnlocked(true); setActiveTab('admin'); }
+                else if (pass !== null) { alert("パスワードが違います"); }
             };
 
             const getStats = () => {
@@ -171,157 +169,149 @@
             };
             const stats = getStats();
 
-            if (!auth) {
-                return <div className="p-10 text-center font-bold text-red-600">Firebaseの設定が行われていません。</div>;
-            }
+            if (!auth) return <div className="flex h-screen items-center justify-center text-slate-400 font-bold">読み込み中...</div>;
 
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-24">
-                    <header className="bg-white border-b sticky top-0 z-20 p-4 flex justify-between items-center">
-                        <div>
-                            <h1 className="text-lg font-black">第19期 チーム希望</h1>
-                            <p className="text-[10px] font-bold text-blue-600">Draft Selection</p>
+                <div className="max-w-md mx-auto min-h-screen pb-safe bg-slate-50">
+                    <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 py-3 flex justify-between items-center shadow-sm">
+                        <div className="flex flex-col">
+                            <h1 className="text-base font-black text-slate-800">第19期 チーム希望</h1>
+                            <p className="text-[10px] font-bold text-blue-600 tracking-wider">DRAFT SELECTION</p>
                         </div>
                         <div className="flex bg-slate-100 p-1 rounded-lg">
-                            <button onClick={()=>setActiveTab('entry')} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='entry'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>入力</button>
-                            <button onClick={handleAdminAccess} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='admin'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>集計</button>
+                            <button onClick={()=>setActiveTab('entry')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab==='entry'?'bg-white text-blue-600 shadow-sm':'text-slate-400'}`}>入力</button>
+                            <button onClick={handleAdminAccess} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab==='admin'?'bg-white text-blue-600 shadow-sm':'text-slate-400'}`}>集計</button>
                         </div>
                     </header>
 
-                    <main className="p-4 space-y-6">
+                    <main className="p-4 pb-32 space-y-6">
                         {activeTab === 'entry' ? (
                             <>
-                                <div className="bg-white p-5 rounded-2xl border border-slate-100 space-y-3 shadow-sm">
-                                    <h2 className="text-sm font-black flex gap-2 items-center"><Icon name="info" className="w-4 h-4 text-blue-500"/>基本情報</h2>
-                                    <input type="text" placeholder="会社名" value={company} onChange={e=>setCompany(e.target.value)} className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-blue-500" />
-                                    <input type="text" placeholder="お名前 (必須)" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-slate-50 p-3 rounded-xl text-sm outline-none border focus:border-blue-500" />
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Icon name="user-circle-2" className="w-4 h-4"/> YOUR PROFILE</h2>
+                                    <div className="space-y-3">
+                                        <input type="text" placeholder="会社名" value={company} onChange={e=>setCompany(e.target.value)} className="w-full bg-slate-50 px-4 py-3 rounded-xl text-base font-bold outline-none border border-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:font-medium placeholder:text-slate-300" />
+                                        <input type="text" placeholder="お名前 (必須)" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-slate-50 px-4 py-3 rounded-xl text-base font-bold outline-none border border-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all placeholder:font-medium placeholder:text-slate-300" />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h2 className="text-xs font-black text-slate-400 px-1">希望順位</h2>
+                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">YOUR CHOICE</h2>
                                     {['first','second','third'].map((rank, i) => {
                                         const team = TEAMS.find(t=>t.id===choices[rank]);
                                         return (
-                                            <div key={rank} className="bg-white border p-3 rounded-xl flex items-center gap-3 shadow-sm min-h-[60px]">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs ${i===0?'bg-amber-500':i===1?'bg-slate-400':'bg-orange-700'}`}>{i+1}</div>
+                                            <div key={rank} className="bg-white border border-slate-200 p-3 rounded-xl flex items-center gap-3 shadow-sm min-h-[64px]">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-sm shrink-0 ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>{i+1}</div>
                                                 {team ? (
-                                                    <div className="flex-1 flex justify-between items-center">
-                                                        <div><div className="font-bold text-sm">{team.title}</div></div>
-                                                        <button onClick={()=>handleSelect(rank, null)} className="text-slate-300"><Icon name="x" className="w-4 h-4"/></button>
+                                                    <div className="flex-1 flex justify-between items-center overflow-hidden">
+                                                        <div className="truncate pr-2"><div className="font-bold text-sm text-slate-700 truncate">{team.title}</div></div>
+                                                        <button onClick={()=>handleSelect(rank, null)} className="text-slate-300 p-2 active:text-red-500"><Icon name="x" className="w-4 h-4"/></button>
                                                     </div>
-                                                ) : <span className="text-xs text-slate-400">下から選択してください</span>}
+                                                ) : <span className="text-xs font-bold text-slate-300">↓ 下から選んでください</span>}
                                             </div>
                                         );
                                     })}
                                 </div>
 
-                                <div className="grid gap-4">
+                                <div className="grid gap-3">
+                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1 mt-2">TEAM LIST</h2>
                                     {TEAMS.map(team => (
-                                        <div key={team.id} className={`relative border-2 rounded-2xl p-5 tap-scale transition-transform ${team.color}`}>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="bg-white p-2 rounded-xl shadow-sm"><Icon name={team.icon} className="w-6 h-6"/></div>
-                                                <button onClick={()=>setSelectedTeam(team)} className="bg-white/50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">詳細 <Icon name="chevron-right" className="w-3 h-3"/></button>
+                                        <div key={team.id} onClick={()=>setSelectedTeam(team)} className={`relative border rounded-2xl p-5 tap-scale transition-all active:brightness-95 cursor-pointer bg-white ${team.color.replace('text-', 'border-').split(' ')[1]}`}>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className={`p-2.5 rounded-xl shadow-sm ${team.color.replace('text-', 'bg-').split(' ')[0]} bg-opacity-10`}><Icon name={team.icon} className={`w-6 h-6 ${team.color.split(' ')[2]}`}/></div>
+                                                <div className="bg-slate-100 px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 text-slate-500">詳細 <Icon name="chevron-right" className="w-3 h-3"/></div>
                                             </div>
-                                            <h3 className="font-black text-lg">{team.title}</h3>
-                                            <p className="text-xs font-bold opacity-70">{team.subtitle}</p>
+                                            <h3 className="font-black text-lg text-slate-800 leading-tight mb-1">{team.title}</h3>
+                                            <p className="text-xs font-bold opacity-60 text-slate-500">{team.subtitle}</p>
+                                            
+                                            {/* Badges */}
+                                            <div className="absolute top-4 right-4 flex flex-col gap-1 items-end">
                                             {Object.entries(choices).map(([r, id]) => id === team.id && (
-                                                <div key={r} className="absolute top-0 right-0 bg-slate-800 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow">
-                                                    {r==='first'?'第1':r==='second'?'第2':'第3'}希望
+                                                <div key={r} className={`text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm ${r==='first'?'bg-amber-400':r==='second'?'bg-slate-300':'bg-orange-300'}`}>
+                                                    {r==='first'?'1st':r==='second'?'2nd':'3rd'}
                                                 </div>
                                             ))}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                <button onClick={handleSubmit} disabled={isSubmitting} className="fixed bottom-4 left-4 right-4 bg-blue-600 text-white py-4 rounded-xl font-black shadow-lg text-center">
-                                    {isSubmitting ? '送信中...' : 'この内容でエントリーする'}
-                                </button>
+                                {/* Fixed Bottom Button */}
+                                <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe bg-white/80 backdrop-blur-lg border-t border-slate-200 z-20">
+                                    <div className="max-w-md mx-auto">
+                                        <button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2">
+                                            {isSubmitting ? <><Icon name="loader-2" className="w-5 h-5 animate-spin"/> 送信中...</> : 'この内容でエントリーする'}
+                                        </button>
+                                    </div>
+                                </div>
                             </>
                         ) : (
-                            <div className="space-y-4">
-                                <div className="bg-blue-600 text-white p-5 rounded-2xl shadow-lg">
+                            // Admin Tab (Same content, kept simple for mobile)
+                            <div className="space-y-4 pb-10">
+                                <div className="bg-slate-800 text-white p-5 rounded-2xl shadow-lg">
                                     <h2 className="font-bold flex items-center gap-2"><Icon name="bar-chart-3" className="w-5 h-5"/> エントリー状況</h2>
-                                    <p className="text-sm mt-1">回答数: <span className="text-2xl font-black">{allEntries.length}</span></p>
+                                    <p className="text-sm mt-1 opacity-80">回答数: <span className="text-2xl font-black">{allEntries.length}</span></p>
                                 </div>
                                 {TEAMS.map(team => {
                                     const s = stats[team.id];
                                     const total = s.first + s.second + s.third;
                                     return (
-                                        <div key={team.id} className="bg-white p-4 rounded-2xl border shadow-sm">
-                                            <div className="flex gap-3 mb-3">
-                                                <div className={`p-2 rounded-lg ${team.color.replace('text-','bg-')} bg-opacity-20`}><Icon name={team.icon} className="w-5 h-5"/></div>
-                                                <div><h3 className="font-bold">{team.title}</h3><div className="text-xs font-bold text-slate-500">総票数: {total}</div></div>
+                                        <div key={team.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                            <div className="flex gap-3 mb-4 items-center border-b border-slate-50 pb-3">
+                                                <div className={`p-2 rounded-lg bg-slate-50`}><Icon name={team.icon} className={`w-5 h-5 text-slate-500`}/></div>
+                                                <div><h3 className="font-bold text-slate-800 text-sm">{team.title}</h3><div className="text-[10px] font-bold text-slate-400">TOTAL: {total}票</div></div>
                                             </div>
-                                            
-                                            {/* Bar Chart */}
-                                            <div className="space-y-2 text-xs font-bold mb-4">
-                                                <div className="flex items-center gap-2"><span className="w-8 text-amber-500">1st</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.first/Math.max(1, allEntries.length))*100}%`}} className="bg-amber-500 h-full rounded-full"></div></div><span>{s.first}</span></div>
-                                                <div className="flex items-center gap-2"><span className="w-8 text-slate-400">2nd</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.second/Math.max(1, allEntries.length))*100}%`}} className="bg-slate-400 h-full rounded-full"></div></div><span>{s.second}</span></div>
-                                                <div className="flex items-center gap-2"><span className="w-8 text-orange-700">3rd</span><div className="flex-1 bg-slate-100 rounded-full h-2"><div style={{width: `${(s.third/Math.max(1, allEntries.length))*100}%`}} className="bg-orange-700 h-full rounded-full"></div></div><span>{s.third}</span></div>
-                                            </div>
-
-                                            {/* Detailed Lists */}
-                                            <div className="border-t pt-3 space-y-3">
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 mb-1">第1希望:</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {allEntries.filter(e=>e.choices.first===team.id).map(e=>
-                                                            <span key={e.id} className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-1 rounded text-[10px] font-bold">{e.name}</span>
-                                                        )}
-                                                        {allEntries.filter(e=>e.choices.first===team.id).length===0 && <span className="text-[10px] text-slate-300">なし</span>}
+                                            <div className="space-y-4">
+                                                {['first','second','third'].map((r, i) => (
+                                                    <div key={r}>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>{i+1}st</span>
+                                                            <span className="text-xs font-bold text-slate-300">{s[r]}票</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {allEntries.filter(e=>e.choices[r]===team.id).map(e=>
+                                                                <span key={e.id} className="bg-slate-50 text-slate-600 border border-slate-100 px-2 py-1 rounded text-[10px] font-bold">{e.name}</span>
+                                                            )}
+                                                            {allEntries.filter(e=>e.choices[r]===team.id).length===0 && <span className="text-[10px] text-slate-200">-</span>}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 mb-1">第2希望:</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {allEntries.filter(e=>e.choices.second===team.id).map(e=>
-                                                            <span key={e.id} className="bg-slate-50 text-slate-600 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold">{e.name}</span>
-                                                        )}
-                                                        {allEntries.filter(e=>e.choices.second===team.id).length===0 && <span className="text-[10px] text-slate-300">なし</span>}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 mb-1">第3希望:</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {allEntries.filter(e=>e.choices.third===team.id).map(e=>
-                                                            <span key={e.id} className="bg-orange-50 text-orange-800 border border-orange-200 px-2 py-1 rounded text-[10px] font-bold">{e.name}</span>
-                                                        )}
-                                                        {allEntries.filter(e=>e.choices.third===team.id).length===0 && <span className="text-[10px] text-slate-300">なし</span>}
-                                                    </div>
-                                                </div>
+                                                ))}
                                             </div>
                                         </div>
                                     )
                                 })}
-
-                                <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <button onClick={handleReset} className="w-full py-3 text-red-600 font-bold text-xs border border-red-200 rounded-xl hover:bg-red-50 flex items-center justify-center gap-2">
-                                        <Icon name="trash-2" className="w-4 h-4" /> 集計データを全てリセットする
-                                    </button>
-                                </div>
+                                <button onClick={handleReset} className="w-full py-4 mt-8 text-rose-500 font-bold text-xs border border-rose-100 rounded-xl bg-rose-50 flex items-center justify-center gap-2 mb-safe">
+                                    <Icon name="trash-2" className="w-4 h-4" /> 全データをリセット
+                                </button>
                             </div>
                         )}
                     </main>
 
+                    {/* Mobile Bottom Sheet Modal */}
                     {selectedTeam && (
-                        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
-                            <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden animate-in slide-in-from-bottom shadow-2xl">
-                                <div className={`p-6 ${selectedTeam.color.split(' ')[0]}`}>
+                        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200" onClick={()=>setSelectedTeam(null)}>
+                            <div className="bg-white w-full max-w-md rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pb-safe" onClick={e=>e.stopPropagation()}>
+                                <div className={`p-6 ${selectedTeam.color.split(' ')[0]} bg-opacity-20`}>
                                     <div className="flex justify-between items-start mb-2">
-                                        <div className="bg-white p-3 rounded-2xl shadow-sm inline-block"><Icon name={selectedTeam.icon} className="w-6 h-6"/></div>
-                                        <button onClick={()=>setSelectedTeam(null)} className="bg-white/50 p-2 rounded-full"><Icon name="x" className="w-5 h-5"/></button>
+                                        <div className="bg-white p-3 rounded-2xl shadow-sm inline-block"><Icon name={selectedTeam.icon} className={`w-8 h-8 ${selectedTeam.color.split(' ')[2]}`}/></div>
+                                        <button onClick={()=>setSelectedTeam(null)} className="bg-white/50 p-2 rounded-full active:bg-white"><Icon name="x" className="w-5 h-5 text-slate-500"/></button>
                                     </div>
-                                    <h2 className="text-2xl font-black">{selectedTeam.title}</h2>
-                                    <p className="font-bold opacity-80">{selectedTeam.subtitle}</p>
+                                    <h2 className="text-2xl font-black text-slate-800 leading-tight">{selectedTeam.title}</h2>
+                                    <p className="font-bold text-slate-500 text-sm mt-1">{selectedTeam.subtitle}</p>
                                 </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="space-y-2">
-                                        {selectedTeam.details.map((d,i)=>(<div key={i} className="flex gap-2 text-sm"><Icon name="check-circle-2" className="w-4 h-4 text-blue-500 shrink-0 mt-0.5"/><span className="text-slate-700">{d}</span></div>))}
+                                <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                                    <div className="space-y-3">
+                                        {selectedTeam.details.map((d,i)=>(
+                                            <div key={i} className="flex gap-3 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <Icon name="check-circle-2" className="w-5 h-5 text-blue-500 shrink-0 mt-0.5"/>
+                                                <span className="text-slate-700 font-medium leading-snug">{d}</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 pt-2">
+                                    <div className="grid grid-cols-3 gap-3 pt-2 pb-4">
                                         {['first','second','third'].map((r,i)=>(
-                                            <button key={r} onClick={()=>handleSelect(r, selectedTeam.id)} className={`py-3 rounded-xl text-xs font-bold border-2 ${choices[r]===selectedTeam.id?'bg-slate-900 text-white border-slate-900':'bg-white text-slate-600'}`}>
-                                                {i+1}位
+                                            <button key={r} onClick={()=>{handleSelect(r, selectedTeam.id); setSelectedTeam(null);}} className={`py-3 rounded-xl text-xs font-bold border-2 tap-scale ${choices[r]===selectedTeam.id?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-500 border-slate-200'}`}>
+                                                {i+1}位で希望
                                             </button>
                                         ))}
                                     </div>
