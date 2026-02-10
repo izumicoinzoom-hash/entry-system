@@ -71,10 +71,50 @@
         };
 
         const TEAMS = [
-            { id: 'org', title: '組織・仲間づくり', subtitle: '5月総会・動員・e-doyu', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', icon: 'users', details: ['【主な担当】5月定時総会の設営、動員目標達成', '【繁忙期】4月～5月', '【得られるもの】顔の広さ、組織運営の基礎'] },
-            { id: 'vision', title: 'ビジョン・AI', subtitle: '11月フォーラム・AI活用', color: 'bg-blue-50 border-blue-200 text-blue-800', icon: 'target', details: ['【主な担当】11月経営フォーラム、AI勉強会', '【繁忙期】9月～11月', '【得られるもの】最新AIスキル、自社の経営指針'] },
-            { id: 'learn', title: '事業承継・学び', subtitle: '実践報告例会・家族例会', color: 'bg-amber-50 border-amber-200 text-amber-800', icon: 'book-open', details: ['【主な担当】家族例会(夏)、実践報告の企画', '【繁忙期】7月～8月', '【得られるもの】深い学び、家族ぐるみの交流'] },
-            { id: 'region', title: '地域・広域連携', subtitle: '天草連携・全国行事', color: 'bg-rose-50 border-rose-200 text-rose-800', icon: 'map-pin', details: ['【主な担当】天草合同例会、全国行事動員', '【繁忙期】10月', '【得られるもの】県外・市外との強い繋がり'] }
+            { 
+                id: 'learn', 
+                title: '事業承継・学び', 
+                subtitle: '実践報告例会', 
+                color: 'bg-amber-50 border-amber-200 text-amber-800', 
+                icon: 'book-open', 
+                details: [
+                    '【主な担当】実践報告例会', 
+                    '【得られるもの】事業承継について'
+                ] 
+            },
+            { 
+                id: 'org', 
+                title: '組織・仲間づくり', 
+                subtitle: '家族例会・組織創り', 
+                color: 'bg-emerald-50 border-emerald-200 text-emerald-800', 
+                icon: 'users', 
+                details: [
+                    '【主な担当】家族例会の設営、強い組織作り', 
+                    '【得られるもの】家族ぐるみの交流、組織運営について'
+                ] 
+            },
+            { 
+                id: 'vision', 
+                title: 'ビジョン・AI', 
+                subtitle: '11月フォーラム・AI活用', 
+                color: 'bg-blue-50 border-blue-200 text-blue-800', 
+                icon: 'target', 
+                details: [
+                    '【主な担当】11月経営フォーラム、AI勉強会', 
+                    '【得られるもの】最新AIスキル、自社のビジョン'
+                ] 
+            },
+            { 
+                id: 'region', 
+                title: '地域・広域連携', 
+                subtitle: '天草連携・全国行事', 
+                color: 'bg-rose-50 border-rose-200 text-rose-800', 
+                icon: 'map-pin', 
+                details: [
+                    '【主な担当】天草合同例会、他支部連携', 
+                    '【得られるもの】各支部との強い繋がり'
+                ] 
+            }
         ];
 
         function App() {
@@ -202,24 +242,7 @@
                                     </p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">YOUR CHOICE</h2>
-                                    {['first','second','third'].map((rank, i) => {
-                                        const team = TEAMS.find(t=>t.id===choices[rank]);
-                                        return (
-                                            <div key={rank} className="bg-white border border-slate-200 p-3 rounded-xl flex items-center gap-3 shadow-sm min-h-[64px]">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-sm shrink-0 ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>{i+1}</div>
-                                                {team ? (
-                                                    <div className="flex-1 flex justify-between items-center overflow-hidden">
-                                                        <div className="truncate pr-2"><div className="font-bold text-sm text-slate-700 truncate">{team.title}</div></div>
-                                                        <button onClick={()=>handleSelect(rank, null)} className="text-slate-300 p-2 active:text-red-500"><Icon name="x" className="w-4 h-4"/></button>
-                                                    </div>
-                                                ) : <span className="text-xs font-bold text-slate-300">↓ 下から選んでください</span>}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
+                                {/* TEAM LISTを先に表示 */}
                                 <div className="grid gap-3">
                                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1 mt-2">TEAM LIST</h2>
                                     {TEAMS.map(team => (
@@ -241,6 +264,25 @@
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                {/* YOUR CHOICEを後に表示 */}
+                                <div className="space-y-2">
+                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">YOUR CHOICE</h2>
+                                    {['first','second','third'].map((rank, i) => {
+                                        const team = TEAMS.find(t=>t.id===choices[rank]);
+                                        return (
+                                            <div key={rank} className="bg-white border border-slate-200 p-3 rounded-xl flex items-center gap-3 shadow-sm min-h-[64px]">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-sm shrink-0 ${i===0?'bg-amber-400':i===1?'bg-slate-300':'bg-orange-300'}`}>{i+1}</div>
+                                                {team ? (
+                                                    <div className="flex-1 flex justify-between items-center overflow-hidden">
+                                                        <div className="truncate pr-2"><div className="font-bold text-sm text-slate-700 truncate">{team.title}</div></div>
+                                                        <button onClick={()=>handleSelect(rank, null)} className="text-slate-300 p-2 active:text-red-500"><Icon name="x" className="w-4 h-4"/></button>
+                                                    </div>
+                                                ) : <span className="text-xs font-bold text-slate-300">↓ チーム詳細から選んでください</span>}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Fixed Bottom Button */}
