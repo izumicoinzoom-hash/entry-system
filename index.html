@@ -23,20 +23,24 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        // Firebase Configuration (User Provided)
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        // ★★★ ここに Firebase からコピーした設定を貼り付けてください ★★★
+        // 以下の const firebaseConfig = { ... }; を、コピーした内容で丸ごと上書きしてください。
+        
         const firebaseConfig = {
-            apiKey: "AIzaSyCesxY149Fx77NDwnplZBCH06dekDcduA4",
-            authDomain: "team-entry.firebaseapp.com",
-            projectId: "team-entry",
-            storageBucket: "team-entry.firebasestorage.app",
-            messagingSenderId: "137873897281",
-            appId: "1:137873897281:web:67b999f86431d0e20213c0",
-            measurementId: "G-KLBEB481CY"
+            apiKey: "ここにAPIキーが入ります",
+            authDomain: "ここにドメインが入ります",
+            projectId: "ここにプロジェクトIDが入ります",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
         };
+        
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
         // Initialize Firebase
         let app, auth, db;
@@ -67,7 +71,6 @@
         function App() {
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('entry');
-            const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
             const [selectedTeam, setSelectedTeam] = useState(null);
             const [name, setName] = useState('');
             const [company, setCompany] = useState('');
@@ -120,44 +123,9 @@
                     alert("送信しました！");
                 } catch (e) {
                     console.error(e);
-                    alert("送信エラー: 権限エラーの可能性があります。");
+                    alert("送信エラー: Firebase設定を確認してください");
                 }
                 setIsSubmitting(false);
-            };
-
-            const handleReset = async () => {
-                if(!confirm("【注意】\n全ての投票データを削除してリセットしますか？\nこの操作は元に戻せません。")) return;
-                
-                const p = prompt("確認のためパスワード(1919)を入力してください");
-                if(p !== "1919") return alert("パスワードが違います");
-
-                setIsSubmitting(true);
-                try {
-                    // 全データを削除
-                    const deletePromises = allEntries.map(entry => 
-                        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'team_preferences', entry.id))
-                    );
-                    await Promise.all(deletePromises);
-                    alert("リセット完了しました！");
-                } catch(e) {
-                    console.error(e);
-                    alert("エラーが発生しました: " + e.message);
-                }
-                setIsSubmitting(false);
-            };
-
-            const handleAdminAccess = () => {
-                if (isAdminUnlocked) {
-                    setActiveTab('admin');
-                    return;
-                }
-                const pass = prompt("【副部会長専用】\n集計閲覧用パスワードを入力してください");
-                if (pass === "1919") {
-                    setIsAdminUnlocked(true);
-                    setActiveTab('admin');
-                } else if (pass !== null) {
-                    alert("パスワードが違います");
-                }
             };
 
             const getStats = () => {
@@ -173,7 +141,7 @@
             const stats = getStats();
 
             if (!auth) {
-                return <div className="p-10 text-center font-bold text-red-600">Firebaseの設定が行われていません。</div>;
+                return <div className="p-10 text-center font-bold text-red-600">Firebaseの設定が行われていません。コード内のfirebaseConfigを修正してください。</div>;
             }
 
             return (
@@ -185,7 +153,7 @@
                         </div>
                         <div className="flex bg-slate-100 p-1 rounded-lg">
                             <button onClick={()=>setActiveTab('entry')} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='entry'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>入力</button>
-                            <button onClick={handleAdminAccess} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='admin'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>集計</button>
+                            <button onClick={()=>setActiveTab('admin')} className={`px-3 py-1.5 text-xs font-bold rounded ${activeTab==='admin'?'bg-white text-blue-600 shadow':'text-slate-400'}`}>集計</button>
                         </div>
                     </header>
 
@@ -264,12 +232,6 @@
                                         </div>
                                     )
                                 })}
-
-                                <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <button onClick={handleReset} className="w-full py-3 text-red-600 font-bold text-xs border border-red-200 rounded-xl hover:bg-red-50 flex items-center justify-center gap-2">
-                                        <Icon name="trash-2" className="w-4 h-4" /> 集計データを全てリセットする
-                                    </button>
-                                </div>
                             </div>
                         )}
                     </main>
