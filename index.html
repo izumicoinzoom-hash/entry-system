@@ -179,7 +179,7 @@
 
             const handleReset = async () => {
                 if(!confirm("【注意】\n全ての投票データを削除してリセットしますか？")) return;
-                const p = prompt("パスワード(1919)を入力");
+                const p = prompt("パスワードを入力");
                 if(p !== "1919") return alert("パスワードが違います");
                 setIsSubmitting(true);
                 try {
@@ -191,7 +191,7 @@
 
             const handleAdminAccess = () => {
                 if (isAdminUnlocked) { setActiveTab('admin'); return; }
-                const pass = prompt("集計閲覧用パスワード(1919)");
+                const pass = prompt("集計閲覧用パスワード");
                 if (pass === "1919") { setIsAdminUnlocked(true); setActiveTab('admin'); }
                 else if (pass !== null) { alert("パスワードが違います"); }
             };
